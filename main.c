@@ -23,7 +23,7 @@ struct struct_sala
 };
 typedef struct struct_sala sala;
 
-struct struct_pelicula //genero accion fantasia ciencia ficcion historia romance // * rojo lol
+struct struct_pelicula //genero accion fantasia ciencia ficcion historia romance // * rojo lol Hola Mundo
 {
     char nombre[N];
     char genero[2][N];
