@@ -32,7 +32,7 @@ typedef struct struct_sala sala;
 struct struct_pelicula //genero accion fantasia ciencia ficcion historia romance //
 {
     char nombre[N];
-    char genero[2][N];
+    char genero[N];
     int dia;
     int mes;
     int ano;
@@ -63,7 +63,7 @@ struct struct_botana
     float precio;
 };
 
-void llena_pelicula(pelicula A[20], char G[5][N], int *dir);//da de alta una pelicula
+void llena_pelicula(pelicula A[20], char G[5][N], char C[6][5], int *dir);//da de alta una pelicula
 void imprimir_pelicula(pelicula A);//imprime una pelicula
 int buscar_pelicula_nombre(pelicula A[20], int dir);//busca una pelicula por su nombre y regresa su posicion
 void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char horarios[15][38], int colores[15][38]);//llena una sala con funciones de una pelicula
@@ -82,9 +82,9 @@ int main()
     dia=local->tm_mday;
     mes=local->tm_mon+1;
     ano=local->tm_year+1900;
-    printf("%d %d %d %d %d %d\n",horas,minutos,segundos,dia,mes,ano);
 
     char generos[5][N]={"Accion","Fantasia","Ciencia Ficcion","Historia,Romance"};
+    char clasificaciones[6][5]={"AA","A","B","B15","C","D"};
     char idiomas[3][N]={"Espanol","Ingles","Japones"};
     char horarios[SALAS][38]={'\0'};
     int colores[SALAS][38]={0};
@@ -103,7 +103,7 @@ int main()
         switch(opcion)
         {
             case 1:
-                llena_pelicula(Peliculas, generos, &dir);
+                llena_pelicula(Peliculas, generos, clasificaciones, &dir);
             break;
             case 2:
                 imprimir_horario(horarios, colores);
@@ -124,31 +124,31 @@ int main()
     return 0;
 }
 
-void llena_pelicula(pelicula A[20], char G[5][N], int *dir)
+void llena_pelicula(pelicula A[20], char G[5][N], char C[6][5], int *dir)
 {
     printf("Introduce el nombre de la pelicula: ");
     fflush(stdin);
     gets(A[*dir].nombre);
-    printf("Introduce los generos de la pelicula:\n1.Para Accion\n2.Para Fantasia\n"
+    printf("Introduce el genero de la pelicula:\n1.Para Accion\n2.Para Fantasia\n"
            "3.Ciencia Ficcion\n4.Historia\n5.Romance\nSi no esta uno, presiona 6 ");
-    for(int i=0;i<2;++i)
+    int genero;
+    scanf("%d",&genero);
+    if(genero<=5)
+        strcpy(A[*dir].genero,G[genero-1]);
+    else
     {
-        int genero;
-        scanf("%d",&genero);
-        if(genero<=5)
-            strcpy(A[*dir].genero[i],G[genero-1]);
-        else
-        {
-            printf("Introduce el genero: ");
-            fflush(stdin);
-            gets(A[*dir].genero[i]);
-        }
+        printf("Introduce el genero: ");
+        fflush(stdin);
+        gets(A[*dir].genero);
     }
     printf("Introduce la fecha en la que se estreno (dia mes y a%co con numero): ",164);
     scanf("%d %d %d", &A[*dir].dia, &A[*dir].mes, &A[*dir].ano);
-    printf("Introduce la clasificacion: ");
-    fflush(stdin);
-    gets(A[*dir].clasificacion);
+    printf("Introduce la clasificacion:\n1. AA: Peliculas para todo publico, generalmente para menores de 7 a%cos.\n"
+            "2. A: Peliculas para todo publico\n3. B: Peliculas para adolescentes de 12 a%cos en adelante\n"
+            "4. B15: Pelicula para menores de 15 a%cos\n5. C: Peliculas para mayores de 18 a%cos\n"
+            "6. D: Peliculas exclusivas para adultos. ", 164, 164, 164, 164);
+    scanf("%d",&genero);
+    strcpy(A[*dir].clasificacion, C[genero-1]);
     printf("Introduce la duracion de la pelicula en minutos: ");
     scanf("%d",&A[*dir].duracion);
     printf("Que caracter quieres asignar a esta pelicula: ");
@@ -156,9 +156,8 @@ void llena_pelicula(pelicula A[20], char G[5][N], int *dir)
     scanf("%c",&A[*dir].caracter);
     printf("Introduce de que colores quieres ese caracter:\n1.Gris Oscuro\n"
            "2.Azul Claro\n3.Verde Claro\n4.Cyan Claro\n5.Rojo Claro\n6.Magenta Claro\n"
-           "7.Amarillo\n8.Blanco");
+           "7.Amarillo\n8.Blanco ");
     scanf("%d",&A[*dir].color);
-    A[*dir].color+=7;
     ++(*dir);
 }
 
@@ -169,10 +168,30 @@ void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char horarios[15][38
     scanf("%d",&sala);
     int funciones_max=19*60/(A.duracion+30)-B[sala].n_funciones;
     int funciones;
+    int minutos;
+    int horas;
+    printf("Introduce el doblaje de la pelicula y el subtitulado:\n1.Espa%col\n2.Ingles\n3.Japones\nSi no esta, deja un 4. ",164);
+    scanf("%d %d", &horas, &minutos);
+    fflush(stdin);
+    if(horas<4)
+        strcpy(B[sala].idioma_sala.doblaje,idiomas[horas-1]);
+    else
+    {
+        printf("Introduce tu idioma para doblaje: ");
+        gets(B[sala].idioma_sala.doblaje);
+    }
+    fflush(stdin);
+    if(minutos<4)
+        strcpy(B[sala].idioma_sala.subtitulado,idiomas[minutos-1]);
+    else
+    {
+        printf("Introduce tu idioma para subtitulos: ");
+        gets(B[sala].idioma_sala.subtitulado);
+    }
     do
     {
-        printf("Para la sala %d cuantas funciones quieres asignar para %s. Tienes como maximo %d funciones."
-               "La sala lleva %d funciones ocupadas. ", sala, A.nombre, funciones_max, B[sala].n_funciones);
+        printf("Para la sala %d cuantas funciones quieres asignar para %s.\nTienes como maximo %d funciones para esta misma pelicula.\n"
+               "La sala lleva %d funcion(es) ocupadas. ", sala, A.nombre, funciones_max, B[sala].n_funciones);
         scanf("%d",&funciones);
         if(funciones>funciones_max)
             printf("Superas el limite de funciones maximas\n");
@@ -181,10 +200,8 @@ void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char horarios[15][38
     for(int i=B[sala].n_funciones;i<B[sala].n_funciones+funciones;++i)//llena una sala con una funcion
     {
         strcpy(B[sala].Funciones[i].nombre_pelicula, A.nombre);
-        int minutos;
-        int horas;
         printf("A que hora comienza la pelicula? (introduce hora y minutos en formato 24 hrs, en intervalos de 30."
-               "Se empieza a las 8:00 am y se termina a las 3:00 am): ");
+               " Se empieza a las 8:00 am y se termina a las 3:00 am): ");
         scanf("%d %d", &horas, &minutos);
         if(horas>=8)
             horas-=8;
@@ -197,24 +214,6 @@ void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char horarios[15][38
         {
             horarios[sala-1][j]=A.caracter;
             colores[sala-1][j]=A.color;
-        }
-        printf("Introduce el doblaje de la pelicula y el subtitulado: 1.Espa%col\n2.Ingles\n3.Japones\nSi no esta, deja un 4. ",164);
-        scanf("%d %d", &horas, &minutos);
-        fflush(stdin);
-        if(horas<4)
-            strcpy(B[sala].idioma_sala.doblaje,idiomas[horas-1]);
-        else
-        {
-            printf("Introduce tu idioma: ");
-            gets(B[sala].idioma_sala.doblaje);
-        }
-        fflush(stdin);
-        if(minutos<4)
-            strcpy(B[sala].idioma_sala.subtitulado,idiomas[minutos-1]);
-        else
-        {
-            printf("Introduce tu idioma: ");
-            gets(B[sala].idioma_sala.subtitulado);
         }
     }
     B[sala].n_funciones+=funciones;
