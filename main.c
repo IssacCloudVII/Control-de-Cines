@@ -34,7 +34,7 @@ struct struct_sala
 };
 typedef struct struct_sala sala;
 
-struct struct_pelicula //genero accion fantasia ciencia ficcion historia romance //
+struct struct_pelicula //genero accion fantasia ciencia ficcion historia romance // Montse estuvo aqui
 {
     char nombre[N];
     char genero[N];
