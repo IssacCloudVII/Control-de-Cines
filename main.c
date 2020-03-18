@@ -15,6 +15,11 @@ struct struct_funcion
 {
     char nombre_pelicula[N];
     idioma idioma_funcion;
+    int h_i;
+    int h_f;
+    int min_in;
+    int min_fin; //sala 1
+                    //LOL Español Japones 12 00 15 00
 };
 typedef struct struct_funcion funcion;
 // *       *     *    *     *
@@ -48,7 +53,6 @@ struct struct_boleto
     char nombre[N];
     char hora[N];
     char sala;
-    int edad;
     char etapa[N];
     float precio;
     int refill;
@@ -70,7 +74,9 @@ void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char horarios[15][38
 void imprimir_horario(char horarios[15][38], int colores[15][38]);//imprime el horario general del dia
 int comprueba_horario(char horarios[38], int a, int b);//comprueba si una pelicula cabe en un intervalo
 int convierte_hora(int horas, int minutos);//convierte una hora a una posicion de la matriz hola
-void borra_pelicula(pelicula A, int *dir);
+void borra_pelicula(pelicula A[20], char horarios[15][38], int colores[15][38], int *dir);//borra una pelicula del sistema
+void borra_horario(char horarios[15][38], int colores[15][38], char caracter, int color);//borra los caracteres de una pelicula que ya eliminaste, del horario
+void modifica_pelicula(pelicula A);
 
 int main()
 {
@@ -113,7 +119,7 @@ int main()
             case 1:
                 system("cls");
                 printf("Introduce una opcion:\n1.Dar de alta una pelicula\n2.Imprime el horario de las peliculas del dia de hoy\n"
-               "3.Llenar una sala para una pelicula.\n4.Salir\n");
+               "3.Llenar una sala para una pelicula.\n4.Imprimir peliculas\n5.Borrar pelicula\n");
                 scanf("%d",&opcion);
                 int pos_aux;
                 system("cls");
@@ -133,7 +139,15 @@ int main()
                             puts("No se encontro esa pelicula, y no se pudo llenar la sala");
                     break;
                     case 4:
-                        puts("¡Gracias por usar!");
+                        if(dir==0)
+                            puts("No tienes peliculas");
+                        for(int i=0;i<dir;++i)
+                        {
+                            imprimir_pelicula(Peliculas[i]);
+                        }
+                    break;
+                    case 5:
+                        borra_pelicula(Peliculas, horarios, colores, &dir);
                     break;
                     default:
                         puts("Opcion incorrecta");
@@ -155,6 +169,11 @@ int main()
 
 void llena_pelicula(pelicula A[20], char G[5][N], char C[6][5], int *dir)
 {
+    if(dir==20)
+    {
+        puts("Ya no caben mas peliculas, lo sentimos");
+        return;
+    }
     printf("Introduce el nombre de la pelicula: ");
     fflush(stdin);
     gets(A[*dir].nombre);
@@ -247,6 +266,9 @@ void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char horarios[15][38
             if(se_puede)
                 puts("Ya hay una funcion en ese intervalo de tiempo");
         }while(se_puede);
+//        B[sala].Funciones[i].h_i=horas;
+//        B[sala].Funciones[i].min_in_i=minutos;
+//        B[sala].Funciones[i].h_i=;
         for(int j=a;j<a+n_intervalos;++j)//llena la matriz de horarios
         {
             horarios[sala-1][j]=A.caracter;
@@ -326,7 +348,45 @@ int comprueba_horario(char horarios[38], int a, int b)
     return 0;
 }
 
-void borra_pelicula(pelicula A, int *dir)
+void imprimir_pelicula(pelicula A)
 {
+    printf("Nombre: %s\n",A.nombre);
+}
+
+void borra_pelicula(pelicula A[20], char horarios[15][38], int colores[15][38], int *dir)
+{
+    char nombre[N];
+    int pos;
+    pos=buscar_pelicula_nombre(A, *dir);//pos 2
+    if(pos==-1)
+    {
+        puts("No se encontro esa pelicula");
+        return;
+    }
+    borra_horario(horarios, colores, A[pos].caracter, A[pos].color);
+    puts("Se borro satisfactoriamente la pelicula");
+    A[pos]=A[(*dir)-1];
+    --(*dir);
+}
+
+void borra_horario(char horarios[15][38], int colores[15][38], char caracter, int color)
+{
+    for(int i=0;i<15;++i)
+    {
+        for(int j=0;j<38;++j)
+        {
+            if(horarios[i][j]==caracter&&colores[i][j]==color)
+            {
+                horarios[i][j]='\0';
+            }
+        }
+    }
+}
+
+void modifica_pelicula(pelicula A)
+{
+    int opcion;
+    printf("Que quieres modificar de esta pelicula?\n1.nombre\n2.genero3.Fecha de estreno\n"
+           "4.duracion\n5.clasificacion\n6.caracter\n7.\ncolor");
 
 }
