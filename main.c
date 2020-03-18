@@ -98,6 +98,7 @@ int main()
 //    dia=local->tm_mday;
 //    mes=local->tm_mon+1;
 //    ano=local->tm_year+1900;
+// AYUDA
     system("cls");
     char generos[5][N]={"Accion","Fantasia","Ciencia Ficcion","Historia,Romance"};
     char clasificaciones[6][5]={"AA","A","B","B15","C","D"};
