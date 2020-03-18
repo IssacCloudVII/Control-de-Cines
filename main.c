@@ -46,7 +46,7 @@ struct struct_pelicula //genero accion fantasia ciencia ficcion historia romance
     char caracter;
     int color;
 };
-typedef struct struct_pelicula pelicula;
+typedef struct struct_pelicula pelicula;//Hola soy Montse
 
 struct struct_boleto
 {
