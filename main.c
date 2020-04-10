@@ -15,17 +15,17 @@ struct struct_funcion
 {
     char nombre_pelicula[N];
     idioma idioma_funcion;
-    char asientos[14][6];// 5*6
-    int boletos_ocupados;
+    char asientos[10][8];// 5*6
+    int asientos_ocupados;
     int h_i;
     int min_in;  //sala 1 //LOL Español Japones 12 00 15 00
+    char tipo[N];
 };
 typedef struct struct_funcion funcion;
 // *       *     *    *     *
 struct struct_sala
 {
     char tamano[N];
-    char tipo[N];
     int n_funciones[7];
     funcion Funciones[7][10];
 };
@@ -42,19 +42,20 @@ struct struct_pelicula //genero accion fantasia ciencia ficcion historia romance
     char clasificacion[N];
     char caracter;
     int color;
+    unsigned int ventas;
 };
 typedef struct struct_pelicula pelicula;//Hola soy Montse
 
 struct struct_boleto
 {
-    char nombre[N];
-    char hora[N];
-    char tipo_funcion[N];
-    int sala;
-    char etapa[N];
-    int fila, columna;
+    char nombre_pelicula[N];
+    int num_sala;
     float precio;
-    int refill;
+    char fila;
+    int columna;
+    int h_i, min_i;
+    int codigo_boleto;
+    char tipo_funcion[N];
 };
 typedef struct struct_boleto boleto;
 
@@ -70,27 +71,29 @@ typedef struct struct_botana botana;
 void llena_pelicula(pelicula A[20], char G[5][N], char C[6][5], int *dir);//da de alta una pelicula
 void imprimir_pelicula(pelicula A);//imprime una pelicula
 int buscar_pelicula_nombre(pelicula A[20], int dir);//busca una pelicula por su nombre y regresa su posicion
-void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char dias[7][N], char horarios[7][15][38], int colores[7][15][38]);//llena una sala con funciones de una pelicula
+void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char dias[7][N], char tipo[4][N], char horarios[7][15][38], int colores[7][15][38]);//llena una sala con funciones de una pelicula
 void imprimir_horario(char horarios[7][15][38], int colores[7][15][38], char dias[7][N], int dia);//imprime el horario general del dia
 int comprueba_horario(char horarios[38], int a, int b);//comprueba si una pelicula cabe en un intervalo
 int convierte_hora(int horas, int minutos);//convierte una hora a una posicion de la matriz
 void borra_pelicula(pelicula A[20], char horarios[7][15][38], int colores[7][15][38], int *dir);//borra una pelicula del sistema
 void borra_horario(char horarios[7][15][38], int colores[7][15][38], char caracter, int color);//borra los caracteres de una pelicula que ya eliminaste, del horario
 void modifica_pelicula(pelicula *A, sala B[SALAS], char G[5][N], char C[6][5], char horarios[7][15][38], int colores[7][15][38], char caracter, int color);
-void imprimir_funciones(pelicula A[20], int dir, sala B[15], char dias[7][N]);
+int imprimir_funciones(pelicula A[20], int dir, sala B[15], char dias[7][N], char tipo[N]);
 void imprimir_leyenda(pelicula A[20], int dir);
 void borra_funcion_pelicula(sala B[15], char nombre[N]);
 void imprimir_cartelera(sala B[15], char dias[7][N]);
+void imprimir_sala(sala B, char dias[7][N]);
+void comprar_boleto(pelicula *A, sala B[15], boleto C[1000], char tipos[N], int *dir_boletos);
+funcion * buscar_funcion(sala B[15], int h_i, int m_i, char nombre_pelicula[N], int dia, char tipo[N], int *sala);
+void imprimir_asientos(char M[10][8], int c, int r);
+void imprimir_boleto(boleto C);
+
 int main()
 {
-    float precio_adulto;
-    float precio_nino;
-    float precio_viejo;
+    srand(time(NULL));
     printf("Introduce la zona en la que estas: ");
     char zona[N];
     gets(zona);
-    printf("Introduce los precios adecuados para tu zona para los boletos en este orden: adultos, ni%cos, adultos mayores: ", 164);
-    scanf("%f %f %f", &precio_adulto, &precio_nino, &precio_viejo);
     time_t actual;
     time(&actual);
     struct tm *local = localtime(&actual);
@@ -102,20 +105,37 @@ int main()
     mes=local->tm_mon+1;
     ano=local->tm_year+1900;
     system("cls");
-    char generos[5][N]={"Accion","Fantasia","Ciencia Ficcion","Historia,Romance"};
-    char clasificaciones[6][5]={"AA","A","B","B15","C","D"};
+    char generos[5][N]={"Accion", "Fantasia", "Ciencia Ficcion", "Historia, Romance"};
+    char clasificaciones[6][5]={"AA", "A", "B", "B15", "C", "D"};
+    int ventas_clasificaciones[6]={0};
     char idiomas[3][N]={"Espa\xA4ol","Ingles","Japones"};
     char dias_semana[7][N]={"Lunes","Martes","Miercoles","Jueves","Viernes","Sabado","Domingo"};
+    char tipos_funcion[4][N]={"Tradicional", "Premium", "3D", "IMAX"};
     char horarios[7][SALAS][38]={'\0'};
     int colores[7][SALAS][38]={0};
+    int dir_boletos=0;
+    boleto Boletos[1000];
     int dir = 0;
     sala Salas[SALAS]={NULL};
+    for(int i=0;i<15;++i)//inicia todas las matrices de asientos con 'o'
+    {
+        for(int j=0;j<7;++j)
+        {
+            for(int k=0;k<10;++k)
+            {
+                memset(Salas[i].Funciones[j][k].asientos, 'o', sizeof(Salas[i].Funciones[j][k].asientos));
+            }
+        }
+    }
     pelicula Peliculas[20];
     int opcion;
+    int sala;
+    int tipo_funcion;
     if(minutos>=10)
         minutos=minutos/10;
     do
     {
+        int pos_aux;
         printf("Bienvenido al sistema de control de cines. Estas en la zona: %s\n", zona);
         printf("Hoy estamos a: %d/%d/%d\n", dia, mes, ano);
         if(minutos>=10)
@@ -132,9 +152,8 @@ int main()
                     system("cls");
                     printf("Introduce una opcion:\n1.Dar de alta una pelicula\n2.Imprime el horario de las peliculas del dia de hoy\n"
                    "3.Llenar una sala para una pelicula.\n4.Imprimir peliculas\n5.Borrar pelicula\n6.Modificar algo de una pelicula\n7.Imprimir toda la cartelera\n"
-                   "8.Salir ");
+                   "8.Imprimir una sala en particular.\n9.Salir ");
                     scanf("%d",&opcion);
-                    int pos_aux;
                     system("cls");
                     switch(opcion)
                     {
@@ -147,7 +166,7 @@ int main()
                             llena_pelicula(Peliculas, generos, clasificaciones, &dir);
                         break;
                         case 2:
-                            printf("Introduce que dia quieres llenar:\n1.Lunes\n2.Martes\n3.Miercoles\n4.Jueves\n5.Viernes\n6.Sabado\n7.Domingo ");
+                            printf("Introduce que dia quieres imprimir:\n1.Lunes\n2.Martes\n3.Miercoles\n4.Jueves\n5.Viernes\n6.Sabado\n7.Domingo ");
                             scanf("%d",&opcion);
                             system("cls");
                             imprimir_horario(horarios, colores, dias_semana, --opcion);
@@ -162,7 +181,7 @@ int main()
                             }
                             pos_aux=buscar_pelicula_nombre(Peliculas, dir);
                             if(pos_aux!=-1)
-                                llena_sala(Peliculas[pos_aux], Salas, idiomas, dias_semana, horarios, colores);
+                                llena_sala(Peliculas[pos_aux], Salas, idiomas, dias_semana, tipos_funcion, horarios, colores);
                             else
                                 puts("No se encontro esa pelicula, y no se pudo llenar la sala");
                         break;
@@ -181,12 +200,21 @@ int main()
                         case 6:
                             pos_aux=buscar_pelicula_nombre(Peliculas, dir);
                             if(pos_aux!=-1)
-                                modifica_pelicula(&Peliculas[pos_aux], Salas, generos, clasificaciones, horarios, colores, Peliculas[pos_aux].caracter, Peliculas[pos_aux].caracter);
+                                modifica_pelicula(&Peliculas[pos_aux], Salas, generos, clasificaciones, horarios,
+                                colores, Peliculas[pos_aux].caracter, Peliculas[pos_aux].caracter);
                             else
                                 puts("No se encontro esa pelicula.");
                         break;
                         case 7:
                             imprimir_cartelera(Salas, dias_semana);
+                        break;
+                        case 8:
+                            printf("Introduce el numero de sala que quieres imprimir: ");
+                            scanf("%d", &sala);
+                            imprimir_sala(Salas[--sala], dias_semana);
+                        break;
+                        case 9:
+                            imprimir_asientos(Salas[11].Funciones[0][0].asientos, 8, 10);
                         break;
                         default:
                             puts("Opcion incorrecta");
@@ -196,18 +224,29 @@ int main()
                     fflush(stdin);
                     getch();
                     system("cls");
-                }while(opcion!=7);
+                }while(opcion!=9);
             break;
             case 2:
                 do
                 {
                     system("cls");
-                    printf("Introduce una opcion:\n1.Imprimir todas las funciones de una pelicula\n10.Salir\n");
+                    printf("Introduce una opcion:\n1.Imprimir todas las funciones de una pelicula\n2.Comprar boletos para una pelicula.\n3.Imprimir boleto por su codigo\n10.Salir\n");
                     scanf("%d",&opcion);
                     switch(opcion)
                     {
                         case 1:
-                            imprimir_funciones(Peliculas, dir, Salas, dias_semana);
+                            printf("Que tipo de funcion quieres quieres buscar?\n1.Para tradicional.\n2.Para premium.\n3.Para 3D.\n4.Para IMAX ");
+                            scanf("%d", &tipo_funcion);
+                            imprimir_funciones(Peliculas, dir, Salas, dias_semana, tipos_funcion[--tipo_funcion]);
+                        break;
+                        case 2:
+                            printf("Que tipo de funcion quieres quieres buscar?\n1.Para tradicional.\n2.Para premium.\n3.Para 3D.\n4.Para IMAX ");
+                            scanf("%d", &tipo_funcion);
+                            pos_aux=imprimir_funciones(Peliculas, dir, Salas, dias_semana, tipos_funcion[--tipo_funcion]);
+                            if(pos_aux!=-1)
+                            {
+                                comprar_boleto(&Peliculas[pos_aux], Salas, Boletos, tipos_funcion[tipo_funcion], &dir_boletos);
+                            }
                         break;
                         case 10:
                         break;
@@ -274,7 +313,7 @@ void llena_pelicula(pelicula A[20], char G[5][N], char C[6][5], int *dir)
     ++(*dir);
 }
 
-void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char dias[7][N], char horarios[7][15][38], int colores[7][15][38])
+void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char dias[7][N], char tipo[3][N], char horarios[7][15][38], int colores[7][15][38])
 {
     int sala;
     printf("A que sala le quieres asignar la funcion: ");
@@ -308,8 +347,8 @@ void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char dias[7][N], cha
         int se_puede;
         do
         {
-            printf("A que hora comienza la pelicula? (introduce hora y minutos en formato 24 hrs, en intervalos de 30."
-                   " Se empieza a las 8:00 am y se termina a las 3:00 am): ");
+            printf("A que hora comienza la pelicula? (introduce hora y minutos en formato 24 hrs, en intervalos de 30, no uses \":\""
+                   " Se abre a las 8:00 am, se cierra a las 1 am, a menos que sea estreno, entonces se cierra a las 3 am): ");
             scanf("%d %d", &horas, &minutos);
             n_intervalos=(A.duracion+30)/30+1;
             a=convierte_hora(horas, minutos);
@@ -338,6 +377,14 @@ void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char dias[7][N], cha
             printf("Introduce tu idioma para subtitulos: ");
             gets(B[sala].Funciones[dia][i].idioma_funcion.subtitulado);
         }
+        if(sala<=9)
+            strcpy(B[sala].Funciones[dia][i].tipo, tipo[0]);
+        else if(sala>=10&&sala<=12)
+            strcpy(B[sala].Funciones[dia][i].tipo, tipo[1]);
+        else if(sala==13)
+            strcpy(B[sala].Funciones[dia][i].tipo, tipo[2]);
+        else
+            strcpy(B[sala].Funciones[dia][i].tipo, tipo[3]);
         for(int j=a;j<a+n_intervalos;++j)//llena la matriz de horarios
         {
             horarios[dia][sala][j]=A.caracter;
@@ -429,6 +476,7 @@ void imprimir_pelicula(pelicula A)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), A.color-1);
     printf("%c\n", A.caracter);
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
+    printf("Numero de boletos vendidos: %u\n", A.ventas);
 }
 
 void borra_pelicula(pelicula A[20], char horarios[7][15][38], int colores[7][15][38], int *dir)
@@ -480,7 +528,7 @@ void borra_funcion_pelicula(sala B[15], char nombre[N])
                     strcpy(B[i].Funciones[j][k].idioma_funcion.doblaje, nombre_aux);
                     strcpy(B[i].Funciones[j][k].idioma_funcion.subtitulado, nombre_aux);
                     memset(B[i].Funciones[j][k].asientos, '\0', sizeof(B[i].Funciones[j][k].asientos));
-                    B[i].Funciones[j][k].boletos_ocupados=0;
+                    B[i].Funciones[j][k].asientos_ocupados=0;
                     B[i].Funciones[j][k].h_i=0;
                     B[i].Funciones[j][k].min_in=0;
                 }
@@ -598,14 +646,14 @@ void modifica_pelicula(pelicula *A, sala B[SALAS], char G[5][N], char C[6][5], c
     }
 }
 
-void imprimir_funciones(pelicula A[20], int dir, sala B[15], char dias[7][N])
+int imprimir_funciones(pelicula A[20], int dir, sala B[15], char dias[7][N], char tipo[N])
 {
     char nombre[N];
     int pos=buscar_pelicula_nombre(A, dir);
     if(pos==-1)
     {
         puts("No se encontro la pelicula");
-        return;
+        return -1;
     }
     else
     {
@@ -617,15 +665,16 @@ void imprimir_funciones(pelicula A[20], int dir, sala B[15], char dias[7][N])
         {
             for(int k=0;k<10;++k)
             {
-                if(strcmp(nombre, B[i].Funciones[j][k].nombre_pelicula)==0)
+                if(strcmp(nombre, B[i].Funciones[j][k].nombre_pelicula)==0&&strcmp(tipo, B[i].Funciones[j][k].tipo)==0)
                 {
-                    printf("%s disponible en la sala %d. %s a las: %d:%d0 \n", B[i].Funciones[j][k].nombre_pelicula, i+1, dias[j],
-                    B[i].Funciones[j][k].h_i, B[i].Funciones[j][k].min_in);
+                    printf("%s disponible en la sala %d. %s a las: %d:%d0.\nTipo de funcion: %s\n", B[i].Funciones[j][k].nombre_pelicula, i+1, dias[j],
+                    B[i].Funciones[j][k].h_i, B[i].Funciones[j][k].min_in, B[i].Funciones[j][k].tipo);
                     printf("Doblaje: %s Subtitulos: %s\n", B[i].Funciones[j][k].idioma_funcion.doblaje, B[i].Funciones[j][k].idioma_funcion.subtitulado);
                 }
             }
         }
     }
+    return pos;
 }
 
 void imprimir_leyenda(pelicula A[N], int dir)
@@ -651,11 +700,158 @@ void imprimir_cartelera(sala B[15], char dias[7][N])
             {
                 if(B[i].Funciones[j][k].nombre_pelicula[0]!='\0')
                 {
-                    printf("%s disponible en la sala %d. %s a las: %d:%d0 \n", B[i].Funciones[j][k].nombre_pelicula, i+1, dias[j],
-                    B[i].Funciones[j][k].h_i, B[i].Funciones[j][k].min_in);
+                    printf("%s disponible en la sala %d. %s a las: %d:%d0.\nTipo de funcion: %s\n", B[i].Funciones[j][k].nombre_pelicula, i+1, dias[j],
+                    B[i].Funciones[j][k].h_i, B[i].Funciones[j][k].min_in, B[i].Funciones[j][k].tipo);
                     printf("Doblaje: %s Subtitulos: %s\n", B[i].Funciones[j][k].idioma_funcion.doblaje, B[i].Funciones[j][k].idioma_funcion.subtitulado);
                 }
             }
         }
     }
+}
+
+void imprimir_sala(sala B, char dias[7][N])
+{
+    for(int i=0;i<7;++i)
+    {
+        printf("%s: Hay %d funciones este dia\n", dias[i], B.n_funciones[i]);
+        for(int j=0;j<10;++j)
+        {
+            if(B.Funciones[i][j].nombre_pelicula[0]!='\0')
+            {
+                printf("%s disponible en la sala %d. %s a las: %d:%d0 \n", B.Funciones[i][j].nombre_pelicula, j+1, dias[i],
+                B.Funciones[i][j].h_i, B.Funciones[i][j].min_in);
+                printf("Doblaje: %s Subtitulos: %s\n", B.Funciones[i][j].idioma_funcion.doblaje, B.Funciones[i][j].idioma_funcion.subtitulado);
+            }
+        }
+    }
+}
+
+funcion * buscar_funcion(sala B[15], int h_i, int m_i, char nombre_pelicula[N], int dia, char tipo[N], int *sala)
+{
+    for(int i=0;i<15;++i)
+    {
+        for(int j=0;j<7;++j)
+        {
+            for(int k=0;k<10;++k)
+            {
+                if(strcmp(B[i].Funciones[j][k].nombre_pelicula, nombre_pelicula)==0
+                &&h_i==B[i].Funciones[j][k].h_i
+                &&m_i==B[i].Funciones[j][k].min_in&&dia==j
+                &&strcmp(B[i].Funciones[j][k].tipo, tipo)==0)
+                {
+                    *sala=i;
+                    return &B[i].Funciones[j][k];
+                }
+            }
+        }
+    }
+    return  NULL;
+}
+
+void imprimir_asientos(char M[10][8], int c, int r)//grande: 10x8 chica: 4x6
+{
+    puts("\t\t\tPANTALLA\n");
+    for(int i=0;i<r;++i)
+    {
+        printf("   %c\t\t", 65+i);
+        for(int j=0;j<c;++j)
+        {
+            if(j==4)
+                printf("\t");
+            printf("%c ", M[i][j]);
+        }
+        puts("");
+    }
+    if(c==4)
+        puts("\n\t\t1 2 3 4\n");
+    else
+        puts("\n\t\t1 2 3 4\t\t5 6 7 8\n");
+}
+
+void comprar_boleto(pelicula *A, sala B[15], boleto C[1000], char tipos[N], int *dir_boletos)
+{
+    if(*dir_boletos==1000)
+    {
+        puts("Ya no se pueden vender mas boletos");
+        return;
+    }
+    else
+    {
+        int h_i;
+        int m_i;
+        int dia_semana;
+        int boletos_comprar;
+        int n_sala;
+        int opcion;
+        funcion *funcion_aux;
+        printf("Introduce el dia de tu funcion:\n1.Lunes\n2.Martes\n3.Miercoles\n4.Jueves\n5.Viernes\n6.Sabado\n7.Domingo ");
+        scanf("%d", &dia_semana);
+        printf("A que hora comienza la pelicula? (introduce hora y minutos en formato 24 hrs, en intervalos de 30, no uses \":\""
+               "Se abre a las 8:00 am, se cierra a las 1 am, a menos que sea estreno, entonces se cierra a las 3 am): ");
+        scanf("%d %d", &h_i, &m_i);
+        funcion_aux=buscar_funcion(B, h_i, m_i, A->nombre, --dia_semana, tipos, &n_sala);
+        if(funcion_aux!=NULL)
+        {
+            printf("Introduce cuantos boletos vas a comprar: ");
+            scanf("%d", &boletos_comprar);
+            printf("Cuentas con alguna tarjeta?\n1.Si\n0.No ");
+            scanf("%d", &opcion);
+            float descuento=1.00;
+            if(opcion)
+            {
+                printf("Con cual tarjeta cuentas?\n1.Estandar\n2.Premium\n3.VIP ");
+                scanf("%d", &opcion);
+                if(opcion==1)
+                    descuento=0.95;
+                else if(opcion==2)
+                    descuento=0.90;
+                else
+                    descuento=0.85;
+            }
+            for(int i=*dir_boletos; i<*dir_boletos+boletos_comprar; ++i)
+            {
+                if(n_sala<=9)
+                    imprimir_asientos(funcion_aux->asientos, 8, 10);
+                else
+                    imprimir_asientos(funcion_aux->asientos, 4, 6);
+                printf("Introduce el precio inicial del boleto: ");
+                scanf("%f", &C[*dir_boletos].precio);
+                C[*dir_boletos].precio*=descuento;
+                fflush(stdin);
+                printf("Introduce la fila: ");
+                scanf("%c", &C[*dir_boletos].fila);
+                printf("Introduce la columna: ");
+                scanf("%d", &C[*dir_boletos].columna);
+                C[*dir_boletos].fila=toupper(C[*dir_boletos].fila);
+                funcion_aux->asientos[C[*dir_boletos].fila-65][--C[*dir_boletos].columna]='x';
+                C[*dir_boletos].codigo_boleto=1+rand()%1000;
+                C[*dir_boletos].h_i=funcion_aux->h_i;
+                C[*dir_boletos].min_i=funcion_aux->min_in;
+                C[*dir_boletos].num_sala=n_sala;
+                strcpy(C[*dir_boletos].nombre_pelicula, funcion_aux->nombre_pelicula);
+                strcpy(C[*dir_boletos].tipo_funcion, funcion_aux->tipo);
+                imprimir_boleto(C[*dir_boletos]);
+                A->ventas+=C[*dir_boletos].precio;
+                printf("Introduce cualquier tecla para continuar ");
+                getch();
+                system("cls");
+            }
+            (*dir_boletos)+=boletos_comprar;
+        }
+        else
+        {
+            puts("No has registrado esa funcion");
+            return;
+        }
+    }
+}
+void imprimir_boleto(boleto C)
+{
+    printf("Codigo del boleto: %d\n", C.codigo_boleto);
+    printf("Hora de la pelicula: %d:%d0 \n", C.h_i, C.min_i);
+    printf("Numero de sala: %d\n", C.num_sala+1);
+    printf("Fila y columna del asiento: %c%d\n", C.fila, C.columna+1);
+    printf("Nombre de la pelicula: %s\n", C.nombre_pelicula);
+    printf("Tipo de funcion: %s\n", C.tipo_funcion);
+    printf("Precio final: %g\n", C.precio);
 }
