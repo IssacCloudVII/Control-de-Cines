@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1586485454 source:d:\programacion\github\control-de-cines\main.c
+1586569748 source:d:\programacion\github\control-de-cines\main.c
 	<stdio.h>
 	<string.h>
 	<time.h>

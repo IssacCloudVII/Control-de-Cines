@@ -39,7 +39,7 @@ struct struct_pelicula //genero accion fantasia ciencia ficcion historia romance
     int mes;
     int ano;
     int duracion;
-    char clasificacion[N];
+    char clasificacion[5];
     char caracter;
     int color;
     unsigned int ventas;
@@ -83,10 +83,13 @@ void imprimir_leyenda(pelicula A[20], int dir);
 void borra_funcion_pelicula(sala B[15], char nombre[N]);
 void imprimir_cartelera(sala B[15], char dias[7][N]);
 void imprimir_sala(sala B, char dias[7][N]);
-void comprar_boleto(pelicula *A, sala B[15], boleto C[1000], char tipos[N], int *dir_boletos);
+void comprar_boleto(pelicula *A, sala B[15], boleto C[1000], char tipos[N], int *dir_boletos, int n_clasificaciones[6], char clasifaciones[6][5]);
 funcion * buscar_funcion(sala B[15], int h_i, int m_i, char nombre_pelicula[N], int dia, char tipo[N], int *sala);
 void imprimir_asientos(char M[10][8], int c, int r);
+int comprobar_boleto_no_repite(int n, boleto C[1000], int dir);
 void imprimir_boleto(boleto C);
+int comprueba_clasificacion(char clasificacion[5], char clasificaciones[6][5]);
+pelicula * ordenar_por_ventas(pelicula A[15], int dir);//imprime cuanto dinero han generado las peliculas y devuelve un puntero a la pelicula mas vendida
 
 int main()
 {
@@ -107,7 +110,6 @@ int main()
     system("cls");
     char generos[5][N]={"Accion", "Fantasia", "Ciencia Ficcion", "Historia, Romance"};
     char clasificaciones[6][5]={"AA", "A", "B", "B15", "C", "D"};
-    int ventas_clasificaciones[6]={0};
     char idiomas[3][N]={"Espa\xA4ol","Ingles","Japones"};
     char dias_semana[7][N]={"Lunes","Martes","Miercoles","Jueves","Viernes","Sabado","Domingo"};
     char tipos_funcion[4][N]={"Tradicional", "Premium", "3D", "IMAX"};
@@ -115,8 +117,10 @@ int main()
     int colores[7][SALAS][38]={0};
     int dir_boletos=0;
     boleto Boletos[1000];
+    botana Botanas[40];
     int dir = 0;
     sala Salas[SALAS]={NULL};
+    int ventas_clasificaciones[6]={0};
     for(int i=0;i<15;++i)//inicia todas las matrices de asientos con 'o'
     {
         for(int j=0;j<7;++j)
@@ -128,6 +132,7 @@ int main()
         }
     }
     pelicula Peliculas[20];
+    pelicula *pelicula_aux;
     int opcion;
     int sala;
     int tipo_funcion;
@@ -152,7 +157,7 @@ int main()
                     system("cls");
                     printf("Introduce una opcion:\n1.Dar de alta una pelicula\n2.Imprime el horario de las peliculas del dia de hoy\n"
                    "3.Llenar una sala para una pelicula.\n4.Imprimir peliculas\n5.Borrar pelicula\n6.Modificar algo de una pelicula\n7.Imprimir toda la cartelera\n"
-                   "8.Imprimir una sala en particular.\n9.Salir ");
+                   "8.Imprimir una sala en particular.\n9.Imprimir reporte por clasificacion.\n10.Imprimir reporte de ventas por pelicula.");
                     scanf("%d",&opcion);
                     system("cls");
                     switch(opcion)
@@ -214,7 +219,14 @@ int main()
                             imprimir_sala(Salas[--sala], dias_semana);
                         break;
                         case 9:
-                            imprimir_asientos(Salas[11].Funciones[0][0].asientos, 8, 10);
+                            for(int i=0;i<6;++i)
+                            {
+                                printf("La clasificacion %s ha vendido %d peliculas\n", clasificaciones[i], ventas_clasificaciones[i]);
+                            }
+                        break;
+                        case 10:
+                            pelicula_aux=ordenar_por_ventas(Peliculas, dir);
+                            printf("La pelicula mas vendida es %s, ha generado $%u\n", pelicula_aux->nombre, pelicula_aux->ventas);
                         break;
                         default:
                             puts("Opcion incorrecta");
@@ -224,13 +236,14 @@ int main()
                     fflush(stdin);
                     getch();
                     system("cls");
-                }while(opcion!=9);
+                }while(opcion!=10);
             break;
             case 2:
                 do
                 {
                     system("cls");
-                    printf("Introduce una opcion:\n1.Imprimir todas las funciones de una pelicula\n2.Comprar boletos para una pelicula.\n3.Imprimir boleto por su codigo\n10.Salir\n");
+                    printf("Introduce una opcion:\n1.Imprimir todas las funciones de una pelicula\n2.Comprar boletos para una pelicula.\n"
+                           "3.Imprimir boleto por su codigo\n10.Salir\n");
                     scanf("%d",&opcion);
                     switch(opcion)
                     {
@@ -245,7 +258,7 @@ int main()
                             pos_aux=imprimir_funciones(Peliculas, dir, Salas, dias_semana, tipos_funcion[--tipo_funcion]);
                             if(pos_aux!=-1)
                             {
-                                comprar_boleto(&Peliculas[pos_aux], Salas, Boletos, tipos_funcion[tipo_funcion], &dir_boletos);
+                                comprar_boleto(&Peliculas[pos_aux], Salas, Boletos, tipos_funcion[tipo_funcion], &dir_boletos, ventas_clasificaciones, clasificaciones);
                             }
                         break;
                         case 10:
@@ -476,7 +489,7 @@ void imprimir_pelicula(pelicula A)
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), A.color-1);
     printf("%c\n", A.caracter);
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
-    printf("Numero de boletos vendidos: %u\n", A.ventas);
+    printf("Dinero generado: $%u\n", A.ventas);
 }
 
 void borra_pelicula(pelicula A[20], char horarios[7][15][38], int colores[7][15][38], int *dir)
@@ -700,9 +713,11 @@ void imprimir_cartelera(sala B[15], char dias[7][N])
             {
                 if(B[i].Funciones[j][k].nombre_pelicula[0]!='\0')
                 {
-                    printf("%s disponible en la sala %d. %s a las: %d:%d0.\nTipo de funcion: %s\n", B[i].Funciones[j][k].nombre_pelicula, i+1, dias[j],
+                    printf("%s disponible en la sala %d. %s a las: %d:%d0.\nTipo de funcion: %s\n", B[i].Funciones[j][k].nombre_pelicula,
+                           i+1, dias[j],
                     B[i].Funciones[j][k].h_i, B[i].Funciones[j][k].min_in, B[i].Funciones[j][k].tipo);
-                    printf("Doblaje: %s Subtitulos: %s\n", B[i].Funciones[j][k].idioma_funcion.doblaje, B[i].Funciones[j][k].idioma_funcion.subtitulado);
+                    printf("Doblaje: %s Subtitulos: %s\n", B[i].Funciones[j][k].idioma_funcion.doblaje,
+                           B[i].Funciones[j][k].idioma_funcion.subtitulado);
                 }
             }
         }
@@ -719,8 +734,9 @@ void imprimir_sala(sala B, char dias[7][N])
             if(B.Funciones[i][j].nombre_pelicula[0]!='\0')
             {
                 printf("%s disponible en la sala %d. %s a las: %d:%d0 \n", B.Funciones[i][j].nombre_pelicula, j+1, dias[i],
-                B.Funciones[i][j].h_i, B.Funciones[i][j].min_in);
-                printf("Doblaje: %s Subtitulos: %s\n", B.Funciones[i][j].idioma_funcion.doblaje, B.Funciones[i][j].idioma_funcion.subtitulado);
+                       B.Funciones[i][j].h_i, B.Funciones[i][j].min_in);
+                printf("Doblaje: %s Subtitulos: %s\n", B.Funciones[i][j].idioma_funcion.doblaje,
+                        B.Funciones[i][j].idioma_funcion.subtitulado);
             }
         }
     }
@@ -768,7 +784,7 @@ void imprimir_asientos(char M[10][8], int c, int r)//grande: 10x8 chica: 4x6
         puts("\n\t\t1 2 3 4\t\t5 6 7 8\n");
 }
 
-void comprar_boleto(pelicula *A, sala B[15], boleto C[1000], char tipos[N], int *dir_boletos)
+void comprar_boleto(pelicula *A, sala B[15], boleto C[1000], char tipos[N], int *dir_boletos, int n_clasificaciones[6], char clasifaciones[6][5])
 {
     if(*dir_boletos==1000)
     {
@@ -824,7 +840,10 @@ void comprar_boleto(pelicula *A, sala B[15], boleto C[1000], char tipos[N], int 
                 scanf("%d", &C[*dir_boletos].columna);
                 C[*dir_boletos].fila=toupper(C[*dir_boletos].fila);
                 funcion_aux->asientos[C[*dir_boletos].fila-65][--C[*dir_boletos].columna]='x';
-                C[*dir_boletos].codigo_boleto=1+rand()%1000;
+                do
+                {
+                    C[*dir_boletos].codigo_boleto=1+rand()%1000;
+                }while(comprobar_boleto_no_repite(C[*dir_boletos].codigo_boleto, C, *dir_boletos));
                 C[*dir_boletos].h_i=funcion_aux->h_i;
                 C[*dir_boletos].min_i=funcion_aux->min_in;
                 C[*dir_boletos].num_sala=n_sala;
@@ -832,6 +851,7 @@ void comprar_boleto(pelicula *A, sala B[15], boleto C[1000], char tipos[N], int 
                 strcpy(C[*dir_boletos].tipo_funcion, funcion_aux->tipo);
                 imprimir_boleto(C[*dir_boletos]);
                 A->ventas+=C[*dir_boletos].precio;
+                ++n_clasificaciones[comprueba_clasificacion(A->clasificacion, clasifaciones)];
                 printf("Introduce cualquier tecla para continuar ");
                 getch();
                 system("cls");
@@ -854,4 +874,57 @@ void imprimir_boleto(boleto C)
     printf("Nombre de la pelicula: %s\n", C.nombre_pelicula);
     printf("Tipo de funcion: %s\n", C.tipo_funcion);
     printf("Precio final: %g\n", C.precio);
+}
+
+int comprobar_boleto_no_repite(int n, boleto C[1000], int dir)
+{
+    for(int i=0;i<dir;++i)
+    {
+        if(C[i].codigo_boleto==n)
+            return 1;
+    }
+    return 0;
+}
+
+int comprueba_clasificacion(char clasificacion[5], char clasificaciones[6][5])
+{
+    for(int i=0;i<6;++i)
+    {
+        if(strcmp(clasificacion, clasificaciones[i])==0)
+        {
+            return i;
+        }
+    }
+}
+
+pelicula * ordenar_por_ventas(pelicula A[15], int dir)
+{
+    pelicula aux;
+    for(int i=0;i<dir-1;++i)
+    {
+        for(int j=0;j<dir-1;++j)
+        {
+            if(A[j].ventas<A[j].ventas)
+            {
+                aux=A[j];
+                A[j]=A[j+1];
+                A[j+1]=aux;
+            }
+        }
+    }
+    for(int i=0;i<dir;++i)
+    {
+        printf("Pelicula: %s. Ventas: $%u\n", A[i].nombre, A[i].ventas);
+    }
+    int mayor=A[0].ventas;
+    int n=0;
+    for(int i=0;i<dir;++i)
+    {
+        if(A[i].ventas>mayor)
+        {
+            mayor=A[i].ventas;
+            n=i;
+        }
+    }
+    return &A[n];
 }
