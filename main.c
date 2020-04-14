@@ -86,6 +86,7 @@ void imprimir_sala(sala B, char dias[7][N]);
 void comprar_boleto(pelicula A, sala B[15], boleto C[1000], int *dir_boletos);
 funcion * buscar_funcion(sala B[15], int h_i, int m_i, char nombre_pelicula[N], int dia, int *sala);
 void imprimir_asientos(char M[10][8]);
+void imprimir_botanas (botana C[100],char [7][N], char [3][N]);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main()
 {
@@ -109,11 +110,14 @@ int main()
     int ventas_clasificaciones[6]={0};
     char idiomas[3][N]={"Espa\xA4ol","Ingles","Japones"};
     char dias_semana[7][N]={"Lunes","Martes","Miercoles","Jueves","Viernes","Sabado","Domingo"};
+    char productos [7][N]={"Palomitas","Refrescos","Nachos","Hot Dog","Chocolate","Helado","Crepas"};
+    char tamanos_palomitas_refresco [3][N] ={"Grande","Mediano","Pequeno"};
     char horarios[7][SALAS][38]={'\0'};
     int colores[7][SALAS][38]={0};
     int dir_boletos=0;
     pelicula pelicula_venta;
     boleto Boletos[1000];
+    botana C[100];
     int dir = 0;
     sala Salas[SALAS]={NULL};
     for(int i=0;i<15;++i)//inicia todas las matrices de asientos con 'o'
@@ -150,7 +154,7 @@ int main()
                     system("cls");
                     printf("\t>>MENU<<\nIntroduce una opcion:\nSelecciona CERO para salir\n1.Dar de alta una pelicula\n2.Imprime el horario de las peliculas del dia de hoy\n"
                    "3.Llenar una sala para una pelicula.\n4.Imprimir peliculas\n5.Borrar pelicula\n6.Modificar algo de una pelicula\n7.Imprimir toda la cartelera\n"
-                   "8.Imprimir una sala en particular.\n9.Realizar una venta de boletos\nOpcion seleccionada: ");
+                   "8.Imprimir una sala en particular.\n9.Realizar una venta de boletos\n10. Compra de botanas\nOpcion seleccionada: ");
                     scanf("%d",&opcion);
                     system("cls");
                     switch(opcion)
@@ -240,6 +244,9 @@ int main()
                             }
 
                         break;
+                        case 10:
+                            imprimir_botanas(C,productos,tamanos_palomitas_refresco);
+                            break;
                         default:
                             puts("Opcion incorrecta");
                         break;
@@ -342,12 +349,22 @@ void llena_pelicula(pelicula A[20], char G[5][N], char C[6][5], int *dir)
 void llena_sala(pelicula A, sala B[15], char idiomas[3][N], char dias[7][N], char horarios[7][15][38], int colores[7][15][38])
 {
     int sala;
-    printf("A que sala le quieres asignar la funcion: ");
+    do{printf("A que sala le quieres asignar la funcion: ");
     scanf("%d",&sala);
+    if (sala>15)
+    {
+        printf ("Solo se cuenta con 15 salas\n");
+        printf ("Intente de nuevo\n");
+    }} while (sala>15);
     --sala;
     int dia;
-    printf("Introduce que dia quieres llenar:\n1.Lunes\n2.Martes\n3.Miercoles\n4.Jueves\n5.Viernes\n6.Sabado\n7.Domingo ");
+    do{printf("Introduce que dia quieres llenar:\n1.Lunes\n2.Martes\n3.Miercoles\n4.Jueves\n5.Viernes\n6.Sabado\n7.Domingo\nOpcion seleccionada: ");
     scanf("%d",&dia);
+    if (dia>7)
+    {
+        printf ("Solo se cuenta con 7 dias de la semana\n");
+        printf ("Intente de nuevo\n");
+    }} while (dia>7);
     --dia;
     int funciones_max=19*60/(A.duracion+30)-B[sala].n_funciones[dia];
     int funciones;
@@ -718,11 +735,11 @@ void imprimir_cartelera(sala B[15], char dias[7][N])
             {
                 if(B[i].Funciones[j][k].nombre_pelicula[0]!='\0')
                 {
-                    printf ("\n_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-\n");
+                    printf ("\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n");
                     printf("%s disponible en la sala %d. %s a las: %d:%d0 \n", B[i].Funciones[j][k].nombre_pelicula, i+1, dias[j],
                     B[i].Funciones[j][k].h_i, B[i].Funciones[j][k].min_in);
                     printf("Doblaje: %s Subtitulos: %s\n", B[i].Funciones[j][k].idioma_funcion.doblaje, B[i].Funciones[j][k].idioma_funcion.subtitulado);
-                    printf ("\n_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-\n");
+                    printf ("\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
                 }
             }
         }
@@ -920,4 +937,19 @@ void comprar_boleto(pelicula A, sala B[15], boleto C[1000], int *dir_boletos)
             return;
         }
     }
+}
+
+void imprimir_botanas(botana C[100], char producto[7][N], char tamanos_palomitas_refresco [3][N])
+{
+    int i=0;
+    printf ("///////////////////////////////////////////////////////////////////////////");
+    printf ("\n\t----> M E N U <----");
+    printf ("\n- Palomitas\n\tTipos:\n\t\t°Naturales\n\t\t°Light\n\t\t°Especial\n\t Tama%cos:\n\t\t°Peque%co\n\t\t°Mediana\n\t\t°Grande",164,164);
+    printf ("\n- Refresco\n\tTipos:\n\t\t°Normal\n\t\t°Light\n\t\t°Agua\n\tTama%cos:\n\t\t°Peque%co\n\t\t°Mediana\n\t\t°Grande",164,164);
+    printf ("\n- Nachos\n\tTipos:\n\t\t°Normales\n\t\t°Light\n\t\t°Con queso extra\n\tTama%cos:\n\t\t°Peque%co\n\t\t°Mediana\n\t\t°Grande",164,164);
+    printf ("\n- Hot Dog");
+    printf ("\n- Chocolate");
+    printf ("\n- Helado\n\tTipos:\n\t\t°Vaso\n\t\t°Cono");
+    printf ("\n- Crepa\n\tTipos:\n\t\t°Dulce\n\t\t°Salada\n");
+    printf ("///////////////////////////////////////////////////////////////////////////");
 }
