@@ -107,7 +107,7 @@ void imprimir_botanas(botana D[40], int *dir_botana);
 void llena_combo(combo E[6], botana D[40], int *dir_botanas, int *dir_combo);
 void imprimir_combos(combo E[6], int dir_combos);
 boleto * buscar_boleto(int codigo, boleto C[1000], int dir_boletos);
-void modificar_boleto(pelicula A[20], int dir, boleto C, sala B[15], int n_clasificaciones[6], char clasificaciones[6][5]);
+void modificar_boleto(pelicula A[20], int dir, boleto *C, sala B[15], int n_clasificaciones[6], char clasificaciones[6][5], char tipos[4][N], char dias[7][N]);
 float comprar_combo(combo E[6], int dir_combos);
 float comprar_individual(botana D[40], int dir_botana);
 
@@ -319,8 +319,9 @@ int main()
                             {
                                 printf("Boleto encontrado: ");
                                 imprimir_boleto(*boleto_aux);
-                                modificar_boleto(Peliculas, dir, *boleto_aux, Salas, ventas_clasificaciones, clasificaciones);
+                                modificar_boleto(Peliculas, dir, boleto_aux, Salas, ventas_clasificaciones, clasificaciones, tipos_funcion, dias_semana);
                             }
+                        break;
                         case 4:
                             printf("Cómo quiere comprar sus botanas?\n1.Por Combo\n2.Individual ");
                             scanf("%d", &opcion_combo);
@@ -1129,36 +1130,93 @@ void imprimir_combos(combo E[6], int dir_combos)
     }
 }
 
-void modificar_boleto(pelicula A[20], int dir, boleto C, sala B[15], int n_clasificaciones[6], char clasificaciones[6][5], tipos)
+void modificar_boleto(pelicula A[20], int dir, boleto *C, sala B[15], int n_clasificaciones[6], char clasificaciones[6][5], char tipos[4][N], char dias[7][N])
 {
     int opcion;
-    --C.funcion_boleto->asientos_ocupados;
-    C.funcion_boleto->asientos[C.columna][C.fila]='o';
+    ++C->funcion_boleto->asientos_ocupados;
+    puts(C->funcion_boleto->nombre_pelicula);
+    C->funcion_boleto->asientos[C->columna][C->fila]='o';
     puts("Debes introducir el nombre de la pelicula que habias comprado.");
     int pos=buscar_pelicula_nombre(A, dir);
-    A[pos].ventas-=C.precio;
+    A[pos].ventas-=C->precio;
     --n_clasificaciones[comprueba_clasificacion(A[pos].clasificacion, clasificaciones)];
-    printf("Que quieres modificar de este boleto?\n");
+    printf("La informacion del boleto anterior fue borrada.\nQue quieres modificar de este boleto?\n");
     printf("1.Cambiar la pelicula\n2.Cambio de horario de esa misma pelicula ");
     scanf("%d", &opcion);
+    int tipo_funcion;
+    int h_i;
+    int m_i;
+    int dia_semana;
+    int boletos_comprar;
+    int n_sala;
+    funcion *funcion_aux;
     switch(opcion)
     {
         case 1:
             puts("Debes introducir el nombre de la pelicula que quieres sustituir");
-            pos=buscar_pelicula_nombre(A, dir);
-            int h_i;
-            int m_i;
-            int dia_semana;
-            int boletos_comprar;
-            int n_sala;
-            int opcion;
-            funcion *funcion_aux;
+            printf("Que tipo de funcion quieres quieres buscar?\n1.Para tradicional.\n2.Para premium.\n3.Para 3D.\n4.Para IMAX ");
+            scanf("%d", &tipo_funcion);
+            pos=imprimir_funciones(A, dir, B, dias, tipos[--tipo_funcion]);
             printf("Introduce el dia de tu funcion:\n1.Lunes\n2.Martes\n3.Miercoles\n4.Jueves\n5.Viernes\n6.Sabado\n7.Domingo ");
             scanf("%d", &dia_semana);
             printf("A que hora comienza la pelicula? (introduce hora y minutos en formato 24 hrs, en intervalos de 30, no uses \":\""
                    "Se abre a las 8:00 am, se cierra a las 1 am, a menos que sea estreno, entonces se cierra a las 3 am): ");
             scanf("%d %d", &h_i, &m_i);
-            funcion_aux=buscar_funcion(B, h_i, m_i, A->nombre, --dia_semana, tipos, &n_sala);
+            funcion_aux=buscar_funcion(B, h_i, m_i, A[pos].nombre, --dia_semana, tipos, &n_sala);
+            if(n_sala<=9)
+                imprimir_asientos(funcion_aux->asientos, 8, 10);
+            else
+                imprimir_asientos(funcion_aux->asientos, 4, 6);
+            fflush(stdin);
+            printf("Introduce la fila: ");
+            scanf("%c", &C->fila);
+            printf("Introduce la columna: ");
+            scanf("%d", &C->columna);
+            C->fila=toupper(C->fila);
+            funcion_aux->asientos[C->fila-65][--C->columna]='x';
+            C->h_i=funcion_aux->h_i;
+            C->min_i=funcion_aux->min_in;
+            C->num_sala=n_sala;
+            strcpy(C->nombre_pelicula, funcion_aux->nombre_pelicula);
+            strcpy(C->tipo_funcion, funcion_aux->tipo);
+            puts("Boleto modificado: ");
+            imprimir_boleto(*C);
+            A[pos].ventas+=C->precio;
+            ++n_clasificaciones[comprueba_clasificacion(A[pos].clasificacion, clasificaciones)];
+            C->funcion_boleto=funcion_aux;
+            ++C->funcion_boleto->asientos_ocupados;
+        break;
+        case 2:
+            puts("Debes volver a validar la pelicula que habias comprado: ");
+            opcion=imprimir_funciones(A, dir, B, dias, C->tipo_funcion);
+            printf("Introduce el dia de tu funcion:\n1.Lunes\n2.Martes\n3.Miercoles\n4.Jueves\n5.Viernes\n6.Sabado\n7.Domingo ");
+            scanf("%d", &dia_semana);
+            printf("A que hora comienza la pelicula? (introduce hora y minutos en formato 24 hrs, en intervalos de 30, no uses \":\""
+                   "Se abre a las 8:00 am, se cierra a las 1 am, a menos que sea estreno, entonces se cierra a las 3 am): ");
+            scanf("%d %d", &h_i, &m_i);
+            funcion_aux=buscar_funcion(B, h_i, m_i, A[pos].nombre, --dia_semana, tipos, &n_sala);
+            if(n_sala<=9)
+                imprimir_asientos(funcion_aux->asientos, 8, 10);
+            else
+                imprimir_asientos(funcion_aux->asientos, 4, 6);
+            fflush(stdin);
+            printf("Introduce la fila: ");
+            scanf("%c", &C->fila);
+            printf("Introduce la columna: ");
+            scanf("%d", &C->columna);
+            C->fila=toupper(C->fila);
+            funcion_aux->asientos[C->fila-65][--C->columna]='x';
+            C->h_i=funcion_aux->h_i;
+            C->min_i=funcion_aux->min_in;
+            C->num_sala=n_sala;
+            strcpy(C->nombre_pelicula, funcion_aux->nombre_pelicula);
+            strcpy(C->tipo_funcion, funcion_aux->tipo);
+            puts("Boleto modificado: ");
+            imprimir_boleto(*C);
+            A[pos].ventas+=C->precio;
+            ++n_clasificaciones[comprueba_clasificacion(A[pos].clasificacion, clasificaciones)];
+            C->funcion_boleto=funcion_aux;
+            ++C->funcion_boleto->asientos_ocupados;
         break;
     }
 
