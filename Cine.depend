@@ -1,7 +1,8 @@
 # depslib dependency file v1.0
-1587110253 source:d:\programacion\github\control-de-cines\main.c
+1587287738 source:d:\programacion\github\control-de-cines\main.c
 	<stdio.h>
 	<string.h>
 	<time.h>
 	<windows.h>
+	<stdbool.h>
 
